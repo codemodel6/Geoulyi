@@ -1,17 +1,25 @@
 {
   "expo": {
-    "name": "Hyeonsilui-Na",
-    "slug": "Hyeonsilui-Na",
+    "name": "현실의 나",
+    "slug": "hyeonsilui-na",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.hyeonsiluina.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "사진 촬영을 위해 카메라 접근 권한이 필요합니다.",
+        "NSMicrophoneUsageDescription": "촬영 시 오디오 접근을 위해 마이크 권한이 필요합니다.",
+        "NSPhotoLibraryAddUsageDescription": "촬영한 사진을 앨범에 저장하기 위해 접근 권한이 필요합니다."
+      }
     },
     "android": {
+      "package": "com.hyeonsiluina.app",
+      "permissions": ["android.permission.CAMERA", "android.permission.RECORD_AUDIO"],
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#000000",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -20,6 +28,17 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "촬영한 사진을 앨범에서 불러오기 위해 접근 권한이 필요합니다.",
+          "savePhotosPermission": "촬영한 사진을 앨범에 저장하기 위해 접근 권한이 필요합니다.",
+          "granularPermissions": ["photo"]
+        }
+      ],
+      "./plugins/withAndroidImageViewerQuery"
+    ]
   }
 }
