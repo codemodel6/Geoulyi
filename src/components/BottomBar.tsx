@@ -1,16 +1,13 @@
-import { Image, Pressable, Text, View } from 'react-native';
+import { Image, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Camera, ImageIcon, SwitchCamera, Timer, User } from 'lucide-react-native';
-import type { TimerMode } from '../hooks/useCameraController';
+import { Bot, ImageIcon, Pause, SwitchCamera, User } from 'lucide-react-native';
 
 type Props = {
-  lastPhotoUri?: string;
-  timerMode: TimerMode;
+  lastScreenshotUri?: string;
   mirrored: boolean;
-  isCapturing: boolean;
   onPressGallery: () => void;
-  onPressTimer: () => void;
-  onPressCapture: () => void;
+  onPressAI: () => void;
+  onPressPause: () => void;
   onPressMirrorToggle: () => void;
   onPressSwitchCamera: () => void;
 };
@@ -19,18 +16,15 @@ const INACTIVE_CIRCLE = 'h-12 w-12 items-center justify-center rounded-full bord
 const ACTIVE_CIRCLE = 'h-12 w-12 items-center justify-center rounded-full border-2 border-black bg-white';
 
 export function BottomBar({
-  lastPhotoUri,
-  timerMode,
+  lastScreenshotUri,
   mirrored,
-  isCapturing,
   onPressGallery,
-  onPressTimer,
-  onPressCapture,
+  onPressAI,
+  onPressPause,
   onPressMirrorToggle,
   onPressSwitchCamera,
 }: Props) {
   const insets = useSafeAreaInsets();
-  const timerActive = timerMode !== 'off';
 
   return (
     <View
@@ -39,27 +33,23 @@ export function BottomBar({
     >
       <Pressable onPress={onPressGallery}>
         <View className="h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-white/40">
-          {lastPhotoUri ? (
-            <Image source={{ uri: lastPhotoUri }} className="h-full w-full" />
+          {lastScreenshotUri ? (
+            <Image source={{ uri: lastScreenshotUri }} className="h-full w-full" />
           ) : (
             <ImageIcon color="#fff" size={22} />
           )}
         </View>
       </Pressable>
 
-      <Pressable onPress={onPressTimer}>
+      <Pressable onPress={onPressAI}>
         <View className={INACTIVE_CIRCLE}>
-          {timerActive ? (
-            <Text className="text-base font-bold text-white">{timerMode}</Text>
-          ) : (
-            <Timer color="#fff" size={22} />
-          )}
+          <Bot color="#fff" size={22} />
         </View>
       </Pressable>
 
-      <Pressable onPress={onPressCapture} disabled={isCapturing}>
+      <Pressable onPress={onPressPause}>
         <View className="h-20 w-20 items-center justify-center rounded-full border-4 border-white bg-white/10">
-          <Camera color="#fff" size={30} />
+          <Pause color="#fff" size={30} />
         </View>
       </Pressable>
 
