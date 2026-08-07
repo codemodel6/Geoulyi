@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import {
+  CommonResolutions,
   useCameraDevice,
   useCameraPermission,
+  usePhotoOutput,
   type CameraRef,
   type FlashMode as VisionFlashMode,
 } from 'react-native-vision-camera';
@@ -22,17 +24,11 @@ export type CameraFacing = 'front' | 'back';
 const FALLBACK_MIN_ZOOM = 1;
 const FALLBACK_MAX_ZOOM = 1;
 
-const DEFAULT_ZOOM = 1;
+const DEFAULT_ZOOM = 1.4;
 
-/**
- * 기본 줌은 기기 범위의 비율이 아니라 고정값이다.
- * 갤럭시 S25 Ultra 실기기 테스트에서 2.5x/1.0x 등을 거쳐, "화각보다 인물 왜곡 방지가 우선"이라는
- * 사용자 결정에 따라 살짝 줌인된 값(1.4x)으로 확정 — 광각으로 가까이서 찍을수록 얼굴이 부풀어
- * 보이는 렌즈 왜곡이 커지므로, 살짝 멀리서 찍은 듯한 비율이 되도록 줌인한다.
- * 전면 카메라는 minZoom이 1이라 이 값이 minZoom보다 커야만 왜곡 방지 효과가 실제로 발생한다(같으면 무효).
- * device.minZoom을 그대로 쓰지 않는 이유: 후면처럼 초광각 렌즈가 있는 기기는 minZoom이 1 미만(예: 0.6)이라
- * 그대로 쓰면 왜곡 방지 없이 초광각 화면이 된다. 기기 범위를 벗어나면 범위 안으로 clamp한다.
- */
+// 카메라 센서가 실제로 찍는 비율(3:4)로 프리뷰를 잘라 보여준다.
+export const PREVIEW_ASPECT_RATIO = 3 / 4;
+
 function defaultFlatteringZoom(minZoom: number, maxZoom: number) {
   return Math.min(Math.max(DEFAULT_ZOOM, minZoom), maxZoom);
 }
@@ -69,6 +65,12 @@ function createSerializedApplier<T>(apply: (value: T) => Promise<void>) {
 
 export function useCameraController() {
   const cameraRef = useRef<CameraRef>(null);
+  /**
+   * 실제로 사진을 찍는 데 쓰지 않는다(한국 판매 기기는 셔터음을 앱에서 끌 수 없어, 촬영을 하면
+   * 일시정지를 누를 때마다 "찰칵" 소리가 난다). 오직 <Camera constraints>의 resolutionBias
+   * 대상으로만 써서, 프리뷰 자체가 센서 최대 해상도(HIGHEST_4_3)로 협상되도록 유도한다.
+   */
+  const photoOutput = usePhotoOutput({ targetResolution: CommonResolutions.HIGHEST_4_3 });
 
   const { hasPermission, requestPermission } = useCameraPermission();
   const [facing, setFacing] = useState<CameraFacing>('front');
@@ -194,7 +196,8 @@ export function useCameraController() {
    * 병목이 TextureView 픽셀 readback 자체로 보임), 캡처가 끝난 뒤에야 화면을 바꾸면 버튼을 눌러도
    * 반응이 없는 것처럼 느껴진다. 그래서 누르는 즉시 상/하단 바부터 숨기고(paused=true), 캡처가
    * 끝나는 대로 정지 이미지를 끼워 넣는다(setFrozenImage) — 그 사이 짧은 틈에는 라이브 프리뷰가
-   * 그대로 보인다.
+   * 그대로 보인다. (사진을 실제로 촬영하는 방식은 쓰지 않는다 — 셔터음 문제, 위 photoOutput 주석
+   * 참고.)
    */
   const pause = useCallback(() => {
     setPaused(true);
@@ -216,6 +219,7 @@ export function useCameraController() {
 
   return {
     cameraRef,
+    photoOutput,
     device,
     cameraReady,
     isAppActive,

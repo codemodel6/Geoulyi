@@ -3,28 +3,21 @@ import { Image, Modal, Pressable, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { captureRef } from 'react-native-view-shot';
 import { Camera } from 'react-native-vision-camera';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useCameraController } from '../hooks/useCameraController';
+import { PREVIEW_ASPECT_RATIO, useCameraController } from '../hooks/useCameraController';
 import { TopBar } from '../components/TopBar';
 import { BottomBar } from '../components/BottomBar';
 import { SettingsScreen } from './SettingsScreen';
 import { GalleryViewerScreen } from './GalleryViewerScreen';
 
-// 얼굴이 살짝 갸름해 보이도록 하는 미세 세로 스트레칭.
-// scaleX를 1보다 작게(가로 압축)하면 화면 양옆에 빈 틈(검은 여백)이 생기므로,
-// 대신 scaleY를 살짝 키워(세로로 늘림) 같은 "더 갸름한 비율" 효과를 틈 없이 낸다.
-const SLIM_SCALE_Y = 1.006;
-// 인물 사진에 흔히 쓰이는 4:5 비율로 프리뷰를 잘라 보여준다(화면 전체를 꽉 채우는 세로로 긴
-// 비율보다 인물이 더 안정적인 비율로 보임). 남는 위/아래는 검은 레터박스로 채워지는데, 이 박스는
-// 라이브/일시정지 상태와 무관하게 항상 같은 위치에 고정해야 일시정지할 때 화면이 튀지 않는다.
-const PREVIEW_ASPECT_RATIO = 4 / 5;
-
 export function CameraScreen() {
   const controller = useCameraController();
+  const insets = useSafeAreaInsets();
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [galleryVisible, setGalleryVisible] = useState(false);
   const previewRef = useRef<View>(null);
-  // 4:5 박스는 화면 정중앙에 위치해 화면 맨 아래(BottomBar 기본 위치)와의 사이에 빈 검은 공간이
+  // 3:4 박스는 화면 정중앙에 위치해 화면 맨 아래(BottomBar 기본 위치)와의 사이에 빈 검은 공간이
   // 생긴다. 버튼이 사진에서 멀어 보이지 않도록, 박스의 실제 아래쪽 끝 위치를 측정해 BottomBar를
   // 그 자리에 바로 붙인다.
   const [previewBoxBottom, setPreviewBoxBottom] = useState<number | null>(null);
@@ -48,7 +41,7 @@ export function CameraScreen() {
   };
 
   const previewTransformStyle = useAnimatedStyle(() => ({
-    transform: [{ scaleX: controller.mirrored ? -1 : 1 }, { scaleY: SLIM_SCALE_Y }],
+    transform: [{ scaleX: controller.mirrored ? -1 : 1 }],
   }));
 
   if (!controller.hasPermission) {
@@ -77,7 +70,16 @@ export function CameraScreen() {
 
   return (
     <View className="flex-1 bg-black">
-      <View style={{ flex: 1, justifyContent: 'center', backgroundColor: 'black' }}>
+      {/* 하단 내비게이션 바(3버튼 제스처 등) 영역만큼 아래를 비워야, 3:4 박스가 화면 전체 높이
+          기준이 아니라 실제로 보이는 영역 기준으로 중앙에 와서 위/아래 여백이 같아진다. */}
+      <View
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          backgroundColor: 'black',
+          paddingBottom: insets.bottom,
+        }}
+      >
         <View
           style={{ width: '100%', aspectRatio: PREVIEW_ASPECT_RATIO, overflow: 'hidden' }}
           onLayout={(e) => setPreviewBoxBottom(e.nativeEvent.layout.y + e.nativeEvent.layout.height)}
@@ -89,7 +91,8 @@ export function CameraScreen() {
                 style={{ flex: 1 }}
                 device={controller.device}
                 isActive={controller.isAppActive}
-                outputs={[]}
+                outputs={[controller.photoOutput]}
+                constraints={[{ resolutionBias: controller.photoOutput }, { binned: false }]}
                 mirrorMode="off"
                 implementationMode="compatible"
                 onStarted={controller.onCameraStarted}
@@ -109,7 +112,7 @@ export function CameraScreen() {
                   style={{
                     width: '100%',
                     height: '100%',
-                    transform: [{ scaleX: controller.mirrored ? -1 : 1 }, { scaleY: SLIM_SCALE_Y }],
+                    transform: [{ scaleX: controller.mirrored ? -1 : 1 }],
                   }}
                   resizeMode="cover"
                 />
